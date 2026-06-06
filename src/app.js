@@ -16,10 +16,13 @@ app.use(express.json());
 
 // Cors middleware olarak ekleniyor.
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? process.env.FRONTEND_URL_PRODUCTION 
-        : process.env.FRONTEND_URL_DEVELOPMENT,
-    credentials: true,  // Tarayıcıdan gelen cookie bilgilerine erişim izni veriliyor.
+    origin: [
+        'https://loodo-puce.vercel.app',
+        'https://loodo-f4fsm093a-huroli-s-projects.vercel.app'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // MongoDB'ye bağlantısı ekleniyor.
