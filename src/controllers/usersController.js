@@ -59,7 +59,13 @@ export const createUser = async (req, res) => {
 
 // Kullanıcının giriş yapması için gerekli olan fonksiyon tanımlanıyor.
 export const loginUser = async (req, res) => {
-    const { email, nickname, password } = req.body;
+    // 🎯 LOG EKLEDİK: Giriş yaparken frontend'in ne gönderdiğini Render loglarında görebileceğiz
+    console.log("📥 FRONTEND'DEN GELEN GİRİŞ VERİSİ (req.body):", req.body);
+
+    const { email, nickname } = req.body;
+    
+    // 🎯 KRİTİK DÜZELTME: Frontend şifreyi giriş yaparken de 'hashedPassword' olarak gönderiyorsa burada yakalıyoruz.
+    const password = req.body.password || req.body.hashedPassword;
 
     if (!email && !nickname) {
         return res.status(400).json({ message: 'Email or nickname is missing!' });
@@ -77,12 +83,11 @@ export const loginUser = async (req, res) => {
             user = await User.findOne({ nickname });
         }
 
-        // 🎯 DÜZELTME 1: Kullanıcı bulunamadıysa Bcrypt'e geçmeden önce temiz hata dön
         if (!user) {
             return res.status(400).json({ error: true, message: 'User not found!' });
         }
 
-        // 🎯 DÜZELTME 2: Veritabanında şifre hangi isimle tutuluyorsa esnek şekilde yakala
+        // Veritabanında şifre hangi isimle tutuluyorsa esnek şekilde yakala
         const savedPasswordInDb = user.password || user.hashedPassword;
         if (!savedPasswordInDb) {
             return res.status(400).json({ error: true, message: 'User password hash not found in database!' });
@@ -106,7 +111,6 @@ export const loginUser = async (req, res) => {
         return res.status(200).json({ error: false, isLoggedIn: true, message: 'Login successful!' });
 
     } catch (error) {
-        // 🎯 DÜZELTME 3: Login patlarsa Render terminalinde ne olduğunu artık görebileceğiz
         console.error("🚨 AMAN HOCAM KABUL EDİLMEYEN HATA (LOGIN):", error);
         res.status(500).json({ error: true, isLoggedIn: false, message: error.message || 'Internal server error while user log in!' });
     }
