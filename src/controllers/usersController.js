@@ -8,42 +8,39 @@ dotenv.config();
 
 // Hesap oluşturmak için gerekli olan fonksiyon tanımlanıyor.
 export const createUser = async (req, res) => {
-    // 🎯 İŞTE BURASI: Frontend'den gelen ham veriyi Render loglarına aynen yazdırıyoruz!
     console.log("📥 FRONTEND'DEN GELEN KAYIT VERİSİ (req.body):", req.body);
 
-    // Gelen istek gövdesinden sadece istenilen bilgiler tanımlanıyor.
-    const { email, firstName, lastName, nickname, password, confirmPassword, birthDate, country } = req.body;
+    // Gelen istek gövdesinden bilgileri tanımlıyoruz.
+    const { email, firstName, lastName, nickname, confirmPassword, birthDate, country } = req.body;
+
+    // 🎯 KRİTİK DÜZELTME: Frontend şifreyi 'hashedPassword' adıyla gönderdiği için ikisini de kontrol ediyoruz.
+    const password = req.body.password || req.body.hashedPassword;
 
     try {
-        // DÜZELTME: Frontend'de confirmPassword alanı olmadığı için, sadece gönderilirse kontrol etmesini sağladık.
+        // Frontend'de confirmPassword alanı olmadığı veya farklı geldiği durumlar için kontrol
         if (confirmPassword && password !== confirmPassword) {
-            console.warn("⚠️ Takılan Kural: Şifreler eşleşmiyor!");
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Passwords do not match!' });
         }
 
-        // DÜZELTME: Şifre hiç gönderilmediyse (undefined ise)
+        // Şifre hiç gönderilmediyse veya boşsa
         if (!password) {
-            console.warn("⚠️ Takılan Kural: Şifre alanı boş (undefined) geldi!");
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Password is required!' });
         }
 
         // Şifre en az 8 karakter olmalıdır.
         if (password.length < 8) {
-            console.warn(`⚠️ Takılan Kural: Şifre kısa! Gelen uzunluk: ${password.length}`);
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Password must be at least 8 characters long!' });
         }
 
         // Email zaten kullanılıyorsa hata döndürülüyor.
         const isEmailAvailable = await User.findOne({ email });
         if (isEmailAvailable) {
-            console.warn("⚠️ Takılan Kural: Bu Email zaten alınmış!");
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Email is already taken!' });
         }
 
         // Kullanıcı adı zaten kullanılıyorsa hata döndürülüyor.
         const isNicknameAvailable = await User.findOne({ nickname });
         if (isNicknameAvailable) {
-            console.warn("⚠️ Takılan Kural: Bu Nickname zaten alınmış!");
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Nickname is already taken!' });
         }
 
