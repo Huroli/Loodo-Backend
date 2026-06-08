@@ -12,8 +12,8 @@ export const createUser = async (req, res) => {
     const { email, firstName, lastName, nickname, password, confirmPassword, birthDate, country } = req.body;
 
     try {
-        // Şifreler eşleşmiyorsa hata döndürülüyor.
-        if (password !== confirmPassword) {
+        // DÜZELTME: Frontend'de confirmPassword alanı olmadığı için, sadece gönderilirse kontrol etmesini sağladık.
+        if (confirmPassword && password !== confirmPassword) {
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Passwords do not match!' });
         }
 
@@ -82,8 +82,8 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ message: 'User not found!' });
         }
 
-        // Girilen şifre hashlenmiş şifreyle kaşılaştırılıyor.
-        const isPasswordCorrect = await bcrypt.compare(password, user.password);
+        // DÜZELTME: Veritabanından gelen alan user.password değil user.hashedPassword olduğu için burayı güncelledik.
+        const isPasswordCorrect = await bcrypt.compare(password, user.hashedPassword);
 
         // Şifre doğruysa token oluşturuluyor. Oluşturulan token cookie olarak kullanıcıya gönderiliyor.
         if (!isPasswordCorrect) {
@@ -145,7 +145,7 @@ export const isAuthenticated = async (req, res) => {
 // Kullanıcının bilgilerini getirmek için gerekli olan fonksiyon tanımlanıyor.
 export const getUserProfile = async (req, res) => {
     try {
-        const { _id, password, ...userData } = req.user.toObject();  // req.user middleware'den geliyor.
+        const { _id, hashedPassword, ...userData } = req.user.toObject();  // DÜZELTME: Destructuring yaparken password yerine hashedPassword'ü dışarı çıkardık.
         return res.status(200).json({ error: false, message: 'User profile fetched successfully!', user: userData });  // Başarılı işlem yanıtı döndürülüyor.
     } catch (error) {
         return res.status(500).json({ error: true, message: 'Internal server error while getting user profile!' });  // Başarısız işlem yanıtı döndürülüyor.
