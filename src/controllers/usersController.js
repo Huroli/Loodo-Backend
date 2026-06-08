@@ -17,6 +17,11 @@ export const createUser = async (req, res) => {
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Passwords do not match!' });
         }
 
+        // DÜZELTME: Şifre hiç gönderilmediyse (undefined ise) .length kontrolüne geçmeden burada yakalıyoruz.
+        if (!password) {
+            return res.status(400).json({ error: true, isUserCreated: false, message: 'Password is required!' });
+        }
+
         // Şifre en az 8 karakter olmalıdır.
         if (password.length < 8) {
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Password must be at least 8 characters long!' });
@@ -52,7 +57,7 @@ export const createUser = async (req, res) => {
         await newUser.save();
         res.status(201).json({ error: false, isUserCreated: true, message: 'User created successfully!' });  // Başarılı işlem yanıtı döndürülüyor.
     } catch (error) {
-        // 🚨 BURAYA LOG EKLEDİK: Render panelinde hatayı açıkça görebilmek için terminale yazdırıyoruz.
+        // Render panelinde diğer olası hataları (validation vb.) görebilmek için logu açık bıraktık.
         console.error("🚨 AMAN HOCAM KABUL EDİLMEYEN HATA:", error);
 
         res.status(400).json({ error: true, isUserCreated: false, message: error.message });   // Başarısız işlem yanıtı döndürülüyor.
