@@ -10,35 +10,29 @@ dotenv.config();
 export const createUser = async (req, res) => {
     console.log("📥 FRONTEND'DEN GELEN KAYIT VERİSİ (req.body):", req.body);
 
-    // Gelen istek gövdesinden bilgileri tanımlıyoruz.
     const { email, firstName, lastName, nickname, confirmPassword, birthDate, country } = req.body;
 
-    // 🎯 KRİTİK DÜZELTME: Frontend şifreyi 'hashedPassword' adıyla gönderdiği için ikisini de kontrol ediyoruz.
+    // Frontend şifreyi 'hashedPassword' veya 'password' adıyla göndermiş olabilir, ikisini de yakala.
     const password = req.body.password || req.body.hashedPassword;
 
     try {
-        // Frontend'de confirmPassword alanı olmadığı veya farklı geldiği durumlar için kontrol
         if (confirmPassword && password !== confirmPassword) {
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Passwords do not match!' });
         }
 
-        // Şifre hiç gönderilmediyse veya boşsa
         if (!password) {
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Password is required!' });
         }
 
-        // Şifre en az 8 karakter olmalıdır.
         if (password.length < 8) {
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Password must be at least 8 characters long!' });
         }
 
-        // Email zaten kullanılıyorsa hata döndürülüyor.
         const isEmailAvailable = await User.findOne({ email });
         if (isEmailAvailable) {
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Email is already taken!' });
         }
 
-        // Kullanıcı adı zaten kullanılıyorsa hata döndürülüyor.
         const isNicknameAvailable = await User.findOne({ nickname });
         if (isNicknameAvailable) {
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Nickname is already taken!' });
@@ -47,23 +41,24 @@ export const createUser = async (req, res) => {
         // Şifre hashleniyor.
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // User modeli kullanılarak yeni bir kullanıcı oluşturuluyor.
+        // 🎯 KRİTİK DÜZELTME: Mongoose şemasının 'password' zorunluluğunu aşmak için iki ismi de besliyoruz.
+        // Şemanda hangisi tanımlıysa Mongoose onu alacak, diğerini yok sayacaktır.
         const newUser = new User({
             email,
             firstName,
             lastName,
             nickname,
-            hashedPassword,
+            password: hashedPassword,       // Şemanın beklediği zorunlu alan için
+            hashedPassword: hashedPassword, // Alternatif isimlendirme için
             birthDate,
             country,
         });
 
-        // Oluşturulan yeni kullanıcı veri tabanına kaydediliyor.
         await newUser.save();
-        res.status(201).json({ error: false, isUserCreated: true, message: 'User created successfully!' });  // Başarılı işlem yanıtı döndürülüyor.
+        res.status(201).json({ error: false, isUserCreated: true, message: 'User created successfully!' });
     } catch (error) {
         console.error("🚨 AMAN HOCAM KABUL EDİLMEYEN HATA:", error);
-        res.status(400).json({ error: true, isUserCreated: false, message: error.message });   // Başarısız işlem yanıtı döndürülüyor.
+        res.status(400).json({ error: true, isUserCreated: false, message: error.message });
     }
 }
 
@@ -89,7 +84,13 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ message: 'User not found!' });
         }
 
-        const isPasswordCorrect = await bcrypt.compare(password, user.hashedPassword);
+        if (!user) {
+            return res.status(400).json({ message: 'User not found!' });
+        }
+
+        // 🎯 DÜZELTME: Veritabanından gelen hashli şifreyi hem user.password hem user.hashedPassword olarak kontrol ediyoruz.
+        const savedPasswordInDb = user.password || user.hashedPassword;
+        const isPasswordCorrect = await bcrypt.compare(password, savedPasswordInDb);
 
         if (!isPasswordCorrect) {
             return res.status(400).json({ message: 'Password is incorrect!' });
@@ -140,7 +141,7 @@ export const isAuthenticated = async (req, res) => {
 // Kullanıcının bilgilerini getirmek için gerekli olan fonksiyon tanımlanıyor.
 export const getUserProfile = async (req, res) => {
     try {
-        const { _id, hashedPassword, ...userData } = req.user.toObject();
+        const { _id, hashedPassword, password, ...userData } = req.user.toObject();
         return res.status(200).json({ error: false, message: 'User profile fetched successfully!', user: userData });
     } catch (error) {
         return res.status(500).json({ error: true, message: 'Internal server error while getting user profile!' });
