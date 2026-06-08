@@ -52,6 +52,9 @@ export const createUser = async (req, res) => {
         await newUser.save();
         res.status(201).json({ error: false, isUserCreated: true, message: 'User created successfully!' });  // Başarılı işlem yanıtı döndürülüyor.
     } catch (error) {
+        // 🚨 BURAYA LOG EKLEDİK: Render panelinde hatayı açıkça görebilmek için terminale yazdırıyoruz.
+        console.error("🚨 AMAN HOCAM KABUL EDİLMEYEN HATA:", error);
+
         res.status(400).json({ error: true, isUserCreated: false, message: error.message });   // Başarısız işlem yanıtı döndürülüyor.
     }
 }
