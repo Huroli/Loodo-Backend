@@ -11,8 +11,6 @@ export const createUser = async (req, res) => {
     console.log("📥 FRONTEND'DEN GELEN KAYIT VERİSİ (req.body):", req.body);
 
     const { email, firstName, lastName, nickname, confirmPassword, birthDate, country } = req.body;
-
-    // Frontend şifreyi 'hashedPassword' veya 'password' adıyla göndermiş olabilir, ikisini de yakala.
     const password = req.body.password || req.body.hashedPassword;
 
     try {
@@ -38,18 +36,15 @@ export const createUser = async (req, res) => {
             return res.status(400).json({ error: true, isUserCreated: false, message: 'Nickname is already taken!' });
         }
 
-        // Şifre hashleniyor.
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 🎯 KRİTİK DÜZELTME: Mongoose şemasının 'password' zorunluluğunu aşmak için iki ismi de besliyoruz.
-        // Şemanda hangisi tanımlıysa Mongoose onu alacak, diğerini yok sayacaktır.
         const newUser = new User({
             email,
             firstName,
             lastName,
             nickname,
-            password: hashedPassword,       // Şemanın beklediği zorunlu alan için
-            hashedPassword: hashedPassword, // Alternatif isimlendirme için
+            password: hashedPassword,       
+            hashedPassword: hashedPassword, 
             birthDate,
             country,
         });
@@ -57,7 +52,7 @@ export const createUser = async (req, res) => {
         await newUser.save();
         res.status(201).json({ error: false, isUserCreated: true, message: 'User created successfully!' });
     } catch (error) {
-        console.error("🚨 AMAN HOCAM KABUL EDİLMEYEN HATA:", error);
+        console.error("🚨 AMAN HOCAM KABUL EDİLMEYEN HATA (KAYIT):", error);
         res.status(400).json({ error: true, isUserCreated: false, message: error.message });
     }
 }
@@ -80,20 +75,23 @@ export const loginUser = async (req, res) => {
             user = await User.findOne({ email });
         } else if (nickname) {
             user = await User.findOne({ nickname });
-        } else {
-            return res.status(400).json({ message: 'User not found!' });
         }
 
+        // 🎯 DÜZELTME 1: Kullanıcı bulunamadıysa Bcrypt'e geçmeden önce temiz hata dön
         if (!user) {
-            return res.status(400).json({ message: 'User not found!' });
+            return res.status(400).json({ error: true, message: 'User not found!' });
         }
 
-        // 🎯 DÜZELTME: Veritabanından gelen hashli şifreyi hem user.password hem user.hashedPassword olarak kontrol ediyoruz.
+        // 🎯 DÜZELTME 2: Veritabanında şifre hangi isimle tutuluyorsa esnek şekilde yakala
         const savedPasswordInDb = user.password || user.hashedPassword;
+        if (!savedPasswordInDb) {
+            return res.status(400).json({ error: true, message: 'User password hash not found in database!' });
+        }
+
         const isPasswordCorrect = await bcrypt.compare(password, savedPasswordInDb);
 
         if (!isPasswordCorrect) {
-            return res.status(400).json({ message: 'Password is incorrect!' });
+            return res.status(400).json({ error: true, message: 'Password is incorrect!' });
         }
 
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -108,7 +106,9 @@ export const loginUser = async (req, res) => {
         return res.status(200).json({ error: false, isLoggedIn: true, message: 'Login successful!' });
 
     } catch (error) {
-        res.status(500).json({ error: true, isLoggedIn: false, message: 'Internal server error while user log in!' });
+        // 🎯 DÜZELTME 3: Login patlarsa Render terminalinde ne olduğunu artık görebileceğiz
+        console.error("🚨 AMAN HOCAM KABUL EDİLMEYEN HATA (LOGIN):", error);
+        res.status(500).json({ error: true, isLoggedIn: false, message: error.message || 'Internal server error while user log in!' });
     }
 }
 
