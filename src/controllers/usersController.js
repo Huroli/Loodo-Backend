@@ -59,12 +59,9 @@ export const createUser = async (req, res) => {
 
 // Kullanıcının giriş yapması için gerekli olan fonksiyon tanımlanıyor.
 export const loginUser = async (req, res) => {
-    // 🎯 LOG EKLEDİK: Giriş yaparken frontend'in ne gönderdiğini Render loglarında görebileceğiz
     console.log("📥 FRONTEND'DEN GELEN GİRİŞ VERİSİ (req.body):", req.body);
 
     const { email, nickname } = req.body;
-    
-    // 🎯 KRİTİK DÜZELTME: Frontend şifreyi giriş yaparken de 'hashedPassword' olarak gönderiyorsa burada yakalıyoruz.
     const password = req.body.password || req.body.hashedPassword;
 
     if (!email && !nickname) {
@@ -87,7 +84,6 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ error: true, message: 'User not found!' });
         }
 
-        // Veritabanında şifre hangi isimle tutuluyorsa esnek şekilde yakala
         const savedPasswordInDb = user.password || user.hashedPassword;
         if (!savedPasswordInDb) {
             return res.status(400).json({ error: true, message: 'User password hash not found in database!' });
@@ -99,7 +95,9 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ error: true, message: 'Password is incorrect!' });
         }
 
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        // 🎯 KRİTİK DÜZELTME: JWT_SECRET boş gelirse sistem patlamasın diye fallback anahtar ekledik
+        const jwtSecretKey = process.env.JWT_SECRET || 'loodo_jwt_secret_key_2026';
+        const token = jwt.sign({ id: user._id, role: user.role }, jwtSecretKey, { expiresIn: '30d' });
 
         res.cookie('authToken', token, {
             httpOnly: true,
@@ -125,7 +123,9 @@ export const isAuthenticated = async (req, res) => {
             return res.status(401).json({ error: true, isLoggedIn: false, message: 'No token provided!' });
         }
 
-        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        // 🎯 KRİTİK DÜZELTME: Doğrulama yaparken de aynı fallback anahtarını kullanıyoruz
+        const jwtSecretKey = process.env.JWT_SECRET || 'loodo_jwt_secret_key_2026';
+        const decodedToken = jwt.verify(token, jwtSecretKey);
         const user = await User.findById(decodedToken.id);
 
         if (!user) {
