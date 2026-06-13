@@ -1,4 +1,7 @@
-# 🚀 Loodo Backend (Not working live-will be fixed)
+# 🚀 Loodo Backend (Working Live-fixed)
+
+<img width="1898" height="1016" alt="image" src="https://github.com/user-attachments/assets/48802692-92df-4f13-8fea-22d3af8d3134" />
+
 
 **The Core Infrastructure Behind Loodo**
 
@@ -100,6 +103,13 @@ npm start
 
 ---
 
-## AI Disclosure
+.
 
-Parts of this README.md file and project documentation were generated/assisted by AI tools.
+## AI Disclosure & Declaration
+
+To maintain complete transparency in line with the event guidelines, this project acknowledges the utilization of Artificial Intelligence (AI) tools during its development.
+
+*   **Documentation & Copywriting:** AI was used to assist in structuring, formatting, and refining the text within this `README.md` file to ensure clarity and professional presentation.
+*   **Development Assistance:** AI tools were used as a collaborative assistant for brainstorming architecture, optimizing code snippets, and debugging backend connections. 
+
+All core logic, design choices, and implementation of **Loodo** were conceptualized, reviewed, and driven entirely by the human developer.
